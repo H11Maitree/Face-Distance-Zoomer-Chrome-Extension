@@ -1,0 +1,29 @@
+{
+  "update_url": "https://clients2.google.com/service/update2/crx",
+  "manifest_version": 3,
+  "name": "Face Distance Zoomer",
+  "version": "0.0.1",
+  "default_locale": "en",
+  "description": "Enhance your browsing experience with Face Distance Zoomer, a smart Chrome extension designed to tailor your screen's zoom level based on your proximity to your device. Effortlessly maintain optimal readability and comfort while you surf the web.",
+  "author": "Maitree HIRUNTEEYAKUL",
+  "icons": {
+    "128": "res/app_icon.png"
+  },
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "options_page": "options.html",
+  "action": {
+    "default_icon": "res/bar_icon.png"
+  },
+  "permissions": [
+    "tabs",
+    "activeTab",
+    "storage",
+    "scripting"
+  ],
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ]
+}
