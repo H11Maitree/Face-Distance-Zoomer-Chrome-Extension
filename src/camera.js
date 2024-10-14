@@ -61,8 +61,6 @@ WPCamera.prototype.setShape = function () {
     video.style.height = height + 'px';
     container.style.width = width + 'px';
     container.style.height = height + 'px';
-    console.log(width);
-    console.log(height)
   });
 };
 

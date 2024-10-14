@@ -55,8 +55,6 @@ function getZoomStateFromBoundingBox(boundingBox, settings){
 
 function performZooming(predictions, settings){
     const prediction = getFirstOrNull(predictions);
-
-    console.log(settings)
     
     if(prediction !== null){
         getZoomStateFromBoundingBox(prediction.boundingBox, settings);
