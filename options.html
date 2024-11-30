@@ -107,20 +107,19 @@
       <h3>Breakpoints JSON</h3>
       <textarea id="zoomBreakpoints"></textarea>
 
-      <div style="height: 40px; padding-bottom: 40px;">
+      <div style="height: 40px;padding-bottom: 40px;width: 100%;position: relative;">
         <button class="btn" id="addBreakpointButton"
-          style="right: 0%; 
-            position: absolute; 
-            background: #6BEF7A;
-          "
+          style="right: 0%; position: absolute; background: #6BEF7A;"
         >
           + Add A BreakPoint
         </button>
       </div>
       <div class="slider-container">
+        <div class="slider-index" id="slider-min">50%</div>
+        <div class="slider-index" id="slider-max">500%</div>
         <div class="slider-track"></div>
       </div>
-      <div class="model-container">
+      <div class="model-container close">
         <div class="model-content">
           <div class="model-close">X</div>
           <form class="breakpoint-options-form">

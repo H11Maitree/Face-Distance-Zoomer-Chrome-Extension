@@ -231,6 +231,9 @@ document.getElementById('save').addEventListener('click', saveOptions);
 let sliderContainer = document.querySelector(".slider-container");
 let sliders = document.querySelectorAll(".slider-pointer");
 
+let sliderMax = 500;
+let sliderMin = 50
+
 function updateValues() {
   const values = Array.from(sliders).map((slider) => Number(slider.dataset.value));
   console.log("updateValues")
@@ -238,14 +241,26 @@ function updateValues() {
   sliders?.forEach((slider) => {
     slider.remove();
   })
-  const min = 50;
-  const max = 500;
+  sliders = []
+
+  // if (settings.zoomBreakpoints){
+  //   sliderMax = Math.max(...settings.zoomBreakpoints.map(item => Number.parseInt(item.zoomState))) + 50
+  //   sliderMin = Math.min(...settings.zoomBreakpoints.map(item => Number.parseInt(item.zoomState))) - 50 
+  //   if (sliderMin < 0) {
+  //     sliderMin = 0;
+  //   }
+  //   if (sliderMax > 500) {
+  //     sliderMax
+  //   }
+  // }
+
 
   settings.zoomBreakpoints?.forEach((breakpoint)=>{
     const newDiv = document.createElement("div");
     newDiv.classList.add("slider-pointer");
-    console.log((Number.parseInt(breakpoint.zoomState) - min) / (max-min) * sliderContainer.offsetWidth)
-    newDiv.style.left = Math.round((Number.parseInt(breakpoint.zoomState) - min)  / (max-min) * sliderContainer.offsetWidth) + "px" ;
+    newDiv.style.left = Math.round((Number.parseInt(breakpoint.zoomState) - sliderMin)  / (sliderMax-sliderMin) * sliderContainer.offsetWidth) + "px" ;
+
+    newDiv.faceWidth = breakpoint.faceWidth;
   
     if (sliders.length > 0) {
       sliders.push(newDiv)
@@ -255,85 +270,71 @@ function updateValues() {
 
     sliderContainer.appendChild(newDiv);
   })
-}
 
-// TODO: make it a function and change zoom value
-sliders.forEach((slider) => {
-  slider.addEventListener("mousedown", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const target = e.target;
-    const sliderWidth = target.parentNode.offsetWidth;
-    const sliderHeight = target.parentNode.offsetHeight;
-    const sliderTop = target.parentNode.offsetTop;
+  // TODO: make it a function and change zoom value
+  sliders.forEach((slider) => {
+    slider.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const target = e.target;
+      const sliderWidth = target.parentNode.offsetWidth;
+      const sliderHeight = target.parentNode.offsetHeight;
+      const sliderTop = target.parentNode.offsetTop;
 
-    let prevX = e.clientX;
-    let prevY = e.clientY;
+      function onMouseMove(e) {
+        const newPosition = Math.min(Math.max(e.clientX - target.parentNode.offsetLeft, 0), sliderWidth);
 
+        if (Math.abs(e.clientY - sliderTop + window.scrollY) > 50) {
+          target.style.top = e.clientY - sliderTop + window.scrollY+ "px";
+        } else {
+          target.style.top = "50%"
+        }
+        console.log(settings.zoomBreakpoints[0].faceWidth)
 
-    function onMouseMove(e) {
-      const deltaX = e.clientX - prevX;
-      const deltaY = e.clientY;
-      const newPosition = Math.min(Math.max(target.offsetLeft + deltaX, 0), sliderWidth);
-
-      if (Math.abs(deltaY - sliderTop) > 50) {
-        target.style.top = e.clientY;
+        target.style.left = newPosition + "px";
+        // target.dataset.value = Math.round((newPosition / sliderWidth) * 100);
+        // updateValues();
+        
       }
 
-      target.style.left = newPosition + "px";
-      target.dataset.value = Math.round((newPosition / sliderWidth) * 100);
-      updateValues();
-    }
+      function onMouseUp(e) {
+        console.log(e.target.offsetLeft);
 
-    function onMouseUp(e) {
-      console.log(e.target.offsetLeft);
-      document.removeEventListener("mousemove", onMouseMove);
-      document.removeEventListener("mouseup", onMouseUp);
-    }
+        if (Math.abs(e.clientY - sliderTop + window.scrollY) > 50) {
+          settings.zoomBreakpoints = settings.zoomBreakpoints.filter((breakpoint) => {
+            return breakpoint.faceWidth != target.faceWidth
+          })
+          updateValues()
+        } else {
+          settings.zoomBreakpoints.forEach((breakpoint) => {
+            if (breakpoint.faceWidth == target.faceWidth) {
+              breakpoint.zoomState = Math.round((e.clientX - sliderContainer.offsetLeft) * (sliderMax-sliderMin) / sliderContainer.offsetWidth + sliderMin) + "%";
+            }
+          })
+        }
+        document.removeEventListener("mousemove", onMouseMove);
+        document.removeEventListener("mouseup", onMouseUp);
+      }
 
-    document.addEventListener("mousemove", onMouseMove);
-    document.addEventListener("mouseup", onMouseUp);
+      document.addEventListener("mousemove", onMouseMove);
+      document.addEventListener("mouseup", onMouseUp);
+    });
   });
-});
 
-// sliderContainer.addEventListener("mousedown", (e) => {
-//   const target = e.target;
-//   const sliderWidth = target.offsetWidth;
+}
 
-//   const newDiv = document.createElement("div");
-//   newDiv.classList.add("slider-pointer");
-//   newDiv.style.left = e.clientX + "px";
 
-//   newDiv.addEventListener("mousedown", (e) => {
-//     e.preventDefault();
-//     e.stopPropagation();
-//     const target = e.target;
-//     const sliderWidth = target.parentNode.offsetWidth;
-//     let prevX = e.clientX;
+sliderContainer.addEventListener("mousedown", (e) => {
+  const target = e.target;
+  const sliderWidth = target.offsetWidth;
 
-//     function onMouseMove(e) {
-//       const deltaX = e.clientX - prevX;
-//       const newPosition = Math.min(Math.max(target.offsetLeft + deltaX, 0), sliderWidth);
-//       prevX = e.clientX;
+  const prediction = getFirstOrNull(predictions);
+  const width = Math.round(getWidthFromBoundingBox(prediction.boundingBox));
+  const zoom = Math.round((e.clientX - sliderContainer.offsetLeft) * (sliderMax-sliderMin) / sliderContainer.offsetWidth + sliderMin) + "%";
 
-//       target.style.left = newPosition + "px";
-//       target.dataset.value = Math.round((newPosition / sliderWidth) * 100);
-//       updateValues();
-//     }
-
-//     function onMouseUp(e) {
-//       console.log(e.target.offsetLeft);
-//       document.removeEventListener("mousemove", onMouseMove);
-//       document.removeEventListener("mouseup", onMouseUp);
-//     }
-
-//     document.addEventListener("mousemove", onMouseMove);
-//     document.addEventListener("mouseup", onMouseUp);
-//   });
-
-//   sliderContainer.appendChild(newDiv);
-
-// })
+  addBreakPoint(width, zoom);
+  updateValues();
+})
 
 // Update the values initially
 updateValues();
@@ -354,24 +355,12 @@ addBreakpointButton.addEventListener("click", () => {
 const saveBreakpointButton = document.querySelector(".breakpoint-options-save");
 saveBreakpointButton.addEventListener("click", () => {
   console.log("saveBreakpointButton");
-  // remind before push: change width
   // TODO maybe: add notification when face not detected
   const prediction = getFirstOrNull(predictions);
   const width = Math.round(getWidthFromBoundingBox(prediction.boundingBox));
   const zoom = document.getElementById("zoom-breakpoint").value + "%";
-  // const width = 100 + settings?.zoomBreakpoints?.length * 20;
 
-  if (settings.zoomBreakpoints){
-    settings.zoomBreakpoints.push({
-      faceWidth: width,
-      zoomState: zoom,
-    })
-  }else {
-    settings.zoomBreakpoints=[{
-      faceWidth: width,
-      zoomState: zoom,
-    }]
-  }
+  addBreakPoint(width, zoom)
   updateValues()
   model.classList.remove("open");
   model.classList.add("close");
@@ -383,3 +372,20 @@ closeModelButton.addEventListener("click", () => {
   model.classList.remove("open");
   model.classList.add("close");
 });
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+// function
+///////////////////////////////////////////////////////////////////////////////////////////////////
+function addBreakPoint(width, zoom) {
+  if (settings.zoomBreakpoints){
+    settings.zoomBreakpoints.push({
+      faceWidth: width,
+      zoomState: zoom,
+    })
+  }else {
+    settings.zoomBreakpoints=[{
+      faceWidth: width,
+      zoomState: zoom,
+    }]
+  }
+}
