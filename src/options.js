@@ -2,7 +2,12 @@
 
 'use strict';
 
-let settings = { position: undefined, mirror: undefined, trackPresentation: undefined, zoomBreakpoints: undefined };
+let settings = { 
+  position: undefined, 
+  mirror: undefined, 
+  trackPresentation: undefined, 
+  zoomBreakpoints: undefined 
+};
 
 const defaultZoomBreakpoints = [
   {
@@ -50,45 +55,47 @@ function enforceOptions() {
 }
 
 function saveOptions() {
-  var position = document.getElementById('position').value;
-  var mirror = document.getElementById('mirror').checked;
-  var trackPresentation = document.getElementById('trackPresentation').checked;
-  var zoomBreakpoints = settings.zoomBreakpoints;
-  try {
-    zoomBreakpoints = JSON.parse(document.getElementById('zoomBreakpoints').value);
-  } catch (error) {
-    console.error("Failed to parse zoom breakpoints:", error);
-    return;
-  }
+  // var position = document.getElementById('position').value;
+  // var mirror = document.getElementById('mirror').checked;
+  // var trackPresentation = document.getElementById('trackPresentation').checked;
+  // var zoomBreakpoints = settings.zoomBreakpoints;
+  // try {
+  //   zoomBreakpoints = JSON.parse(document.getElementById('zoomBreakpoints').value);
+  // } catch (error) {
+  //   console.error("Failed to parse zoom breakpoints:", error);
+  //   return;
+  // }
 
-  chrome.storage.sync.set({
-    position: position,
-    mirror: mirror,
-    trackPresentation: trackPresentation,
-    zoomBreakpoints: zoomBreakpoints
-  }, function () {
-    // Update status to let user know options were saved.
-    var status = document.getElementById('status');
-    status.textContent = 'Options saved.';
-    setTimeout(function () {
-      status.textContent = '';
-    }, 750);
-  });
+  // chrome.storage.sync.set({
+  //   position: position,
+  //   mirror: mirror,
+  //   trackPresentation: trackPresentation,
+  //   zoomBreakpoints: zoomBreakpoints
+  // }, function () {
+  //   // Update status to let user know options were saved.
+  //   var status = document.getElementById('status');
+  //   status.textContent = 'Options saved.';
+  //   setTimeout(function () {
+  //     status.textContent = '';
+  //   }, 750);
+  // });
 
   restoreOptions();
 }
 
 function restoreOptions() {
   // Use default value color = 'red' and likesColor = true.
-  chrome.storage.sync.get({
-    position: 'leftBottom',
-    mirror: true,
-    trackPresentation: true,
-    zoomBreakpoints: defaultZoomBreakpoints,
-  }, function (items) {
-    settings = items;
-    enforceOptions();
-  });
+  // chrome.storage.sync.get({
+  //   position: 'leftBottom',
+  //   mirror: true,
+  //   trackPresentation: true,
+  //   zoomBreakpoints: defaultZoomBreakpoints,
+  // }, function (items) {
+  //   settings = items;
+  //   enforceOptions();
+  //   updateValues();
+  // });
+  updateValues();
 }
 
 let predictions = [];
@@ -111,7 +118,7 @@ function getWidthFromBoundingBox(boundingBox) {
 function updateParameters() {
   function getZoomState(faceWidth) {
     let zoomLevel = undefined;
-    settings.zoomBreakpoints.forEach(breakpoint => {
+    settings.zoomBreakpoints?.forEach(breakpoint => {
       if (faceWidth >= breakpoint.faceWidth) {
         zoomLevel = breakpoint.zoom;
       }
@@ -215,3 +222,164 @@ function DOMContentLoaded() {
 document.addEventListener('DOMContentLoaded', DOMContentLoaded);
 document.getElementById('save').addEventListener('click', saveOptions);
 
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+// slider
+////////////////////////////////////////////////////////////////////////////////////////////
+
+
+let sliderContainer = document.querySelector(".slider-container");
+let sliders = document.querySelectorAll(".slider-pointer");
+
+function updateValues() {
+  const values = Array.from(sliders).map((slider) => Number(slider.dataset.value));
+  console.log("updateValues")
+  
+  sliders?.forEach((slider) => {
+    slider.remove();
+  })
+  const min = 50;
+  const max = 500;
+
+  settings.zoomBreakpoints?.forEach((breakpoint)=>{
+    const newDiv = document.createElement("div");
+    newDiv.classList.add("slider-pointer");
+    console.log((Number.parseInt(breakpoint.zoomState) - min) / (max-min) * sliderContainer.offsetWidth)
+    newDiv.style.left = Math.round((Number.parseInt(breakpoint.zoomState) - min)  / (max-min) * sliderContainer.offsetWidth) + "px" ;
+  
+    if (sliders.length > 0) {
+      sliders.push(newDiv)
+    } else {
+      sliders = [newDiv];
+    }
+
+    sliderContainer.appendChild(newDiv);
+  })
+}
+
+// TODO: make it a function and change zoom value
+sliders.forEach((slider) => {
+  slider.addEventListener("mousedown", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const target = e.target;
+    const sliderWidth = target.parentNode.offsetWidth;
+    const sliderHeight = target.parentNode.offsetHeight;
+    const sliderTop = target.parentNode.offsetTop;
+
+    let prevX = e.clientX;
+    let prevY = e.clientY;
+
+
+    function onMouseMove(e) {
+      const deltaX = e.clientX - prevX;
+      const deltaY = e.clientY;
+      const newPosition = Math.min(Math.max(target.offsetLeft + deltaX, 0), sliderWidth);
+
+      if (Math.abs(deltaY - sliderTop) > 50) {
+        target.style.top = e.clientY;
+      }
+
+      target.style.left = newPosition + "px";
+      target.dataset.value = Math.round((newPosition / sliderWidth) * 100);
+      updateValues();
+    }
+
+    function onMouseUp(e) {
+      console.log(e.target.offsetLeft);
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    }
+
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+  });
+});
+
+// sliderContainer.addEventListener("mousedown", (e) => {
+//   const target = e.target;
+//   const sliderWidth = target.offsetWidth;
+
+//   const newDiv = document.createElement("div");
+//   newDiv.classList.add("slider-pointer");
+//   newDiv.style.left = e.clientX + "px";
+
+//   newDiv.addEventListener("mousedown", (e) => {
+//     e.preventDefault();
+//     e.stopPropagation();
+//     const target = e.target;
+//     const sliderWidth = target.parentNode.offsetWidth;
+//     let prevX = e.clientX;
+
+//     function onMouseMove(e) {
+//       const deltaX = e.clientX - prevX;
+//       const newPosition = Math.min(Math.max(target.offsetLeft + deltaX, 0), sliderWidth);
+//       prevX = e.clientX;
+
+//       target.style.left = newPosition + "px";
+//       target.dataset.value = Math.round((newPosition / sliderWidth) * 100);
+//       updateValues();
+//     }
+
+//     function onMouseUp(e) {
+//       console.log(e.target.offsetLeft);
+//       document.removeEventListener("mousemove", onMouseMove);
+//       document.removeEventListener("mouseup", onMouseUp);
+//     }
+
+//     document.addEventListener("mousemove", onMouseMove);
+//     document.addEventListener("mouseup", onMouseUp);
+//   });
+
+//   sliderContainer.appendChild(newDiv);
+
+// })
+
+// Update the values initially
+updateValues();
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+// model
+///////////////////////////////////////////////////////////////////////////////////////////////////
+let model = document.querySelector(".model-container");
+
+const addBreakpointButton = document.querySelector("#addBreakpointButton");
+addBreakpointButton.addEventListener("click", () => {
+  console.log("addBreakpointButton");
+  model.classList.add("open");
+  model.classList.remove("close");
+});
+
+const saveBreakpointButton = document.querySelector(".breakpoint-options-save");
+saveBreakpointButton.addEventListener("click", () => {
+  console.log("saveBreakpointButton");
+  // remind before push: change width
+  // TODO maybe: add notification when face not detected
+  const prediction = getFirstOrNull(predictions);
+  const width = Math.round(getWidthFromBoundingBox(prediction.boundingBox));
+  const zoom = document.getElementById("zoom-breakpoint").value + "%";
+  // const width = 100 + settings?.zoomBreakpoints?.length * 20;
+
+  if (settings.zoomBreakpoints){
+    settings.zoomBreakpoints.push({
+      faceWidth: width,
+      zoomState: zoom,
+    })
+  }else {
+    settings.zoomBreakpoints=[{
+      faceWidth: width,
+      zoomState: zoom,
+    }]
+  }
+  updateValues()
+  model.classList.remove("open");
+  model.classList.add("close");
+});
+
+const closeModelButton = document.querySelector(".model-close");
+closeModelButton.addEventListener("click", () => {
+  console.log("closeModelButton");
+  model.classList.remove("open");
+  model.classList.add("close");
+});

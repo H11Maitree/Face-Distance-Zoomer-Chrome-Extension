@@ -3,6 +3,8 @@
 
 <head>
   <title>Face Distance Zoomer Options</title>
+  <link rel="stylesheet" href="css/slider.css">
+  <link rel="stylesheet" href="css/model.css">
 </head>
 <style>
   body {
@@ -103,9 +105,38 @@
 
     <div class="section">
       <h3>Breakpoints JSON</h3>
-      <textarea id="zoomBreakpoints">
+      <textarea id="zoomBreakpoints"></textarea>
 
-      </textarea>
+      <div style="height: 40px; padding-bottom: 40px;">
+        <button class="btn" id="addBreakpointButton"
+          style="right: 0%; 
+            position: absolute; 
+            background: #6BEF7A;
+          "
+        >
+          + Add A BreakPoint
+        </button>
+      </div>
+      <div class="slider-container">
+        <div class="slider-track"></div>
+      </div>
+      <div class="model-container">
+        <div class="model-content">
+          <div class="model-close">X</div>
+          <form class="breakpoint-options-form">
+            <label for="quantity">Enlarge Percentage:</label>
+            <input type="number" id="zoom-breakpoint" 
+              name="quantity" min="50" max="1000"
+              value="100"
+            >
+          </form>
+          <button class="breakpoint-options-save btn"
+            style="margin-top: 10px; background: #6BEF7A"
+          >
+            Save
+          </button>
+        </div>
+      </div>
     </div>
 
     <div class="section">
