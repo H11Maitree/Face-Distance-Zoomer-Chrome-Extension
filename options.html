@@ -61,6 +61,7 @@
 
   #facemesh-canvas {
     position: absolute;
+    transform: translateX(-100%);
     pointer-events: none;
   }
 
@@ -68,6 +69,7 @@
     display: flex;
     justify-content: space-evenly;
   }
+
 </style>
 
 <body>
@@ -115,9 +117,10 @@
         </button>
       </div>
       <div class="slider-container">
-        <div class="slider-index" id="slider-min">50%</div>
-        <div class="slider-index" id="slider-max">500%</div>
-        <div class="slider-track"></div>
+        <div class="slider-index" id="slider-min">100%</div>
+        <div class="slider-index" id="slider-max">200%</div>
+        <div class="slider-track"> </div>
+        <div class="slider-candidate"></div>
       </div>
       <div class="model-container close">
         <div class="model-content">
@@ -150,9 +153,15 @@
     </div>
 
     <div class="section" style="display: flex; justify-content: center;">
-      <video id="vid"></video>
-      <canvas id="facemesh-canvas">
-      </canvas>
+      <div style=" width: 50%;">
+        <video id="vid" style="width: 100%"></video>
+        <canvas id="facemesh-canvas">
+        </canvas>
+      </div>
+      <div style="display: flex; justify-content: center; flex-direction: column; width: 50%; align-items: center; font-size: 20px;">
+        Zoom state:
+        <p id="candidate-value">100%</p>
+      </div>
     </div>
 
     <div>

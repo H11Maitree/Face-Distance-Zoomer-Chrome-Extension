@@ -10,22 +10,22 @@ let settings = {
 };
 
 const defaultZoomBreakpoints = [
-  {
-    faceWidth: 0,
-    zoom: '100%'
-  },
-  {
-    faceWidth: 120,
-    zoom: '125%'
-  }, 
-  {
-    faceWidth: 150,
-    zoom: '150%'
-  }, 
-  {
-    faceWidth: 200,
-    zoom: '175%'
-  },
+  // {
+  //   faceWidth: 0,
+  //   zoom: '100%'
+  // },
+  // {
+  //   faceWidth: 120,
+  //   zoom: '125%'
+  // }, 
+  // {
+  //   faceWidth: 150,
+  //   zoom: '150%'
+  // }, 
+  // {
+  //   faceWidth: 200,
+  //   zoom: '175%'
+  // },
 ];
 
 function enforceOptions() {
@@ -36,13 +36,14 @@ function enforceOptions() {
 
   let canvas = document.getElementById('facemesh-canvas');
   let video = document.getElementById("vid");
-  var transform = settings.mirror ? 'scaleX(-1)' : '';
+  var transform = settings.mirror ? 'scaleX(-1) ' : '';
+  var canvastransform = settings.mirror ? 'scaleX(-1) translateX(100%)' : 'translateX(-100%)';
   var flip = settings.mirror ? 'FlipH' : '';
-  canvas.style.webkitTransform = transform;
-  canvas.style.mozTransform = transform;
-  canvas.style.msTransform = transform;
-  canvas.style.oTransform = transform;
-  canvas.style.transform = transform;
+  canvas.style.webkitTransform = canvastransform;
+  canvas.style.mozTransform = canvastransform;
+  canvas.style.msTransform = canvastransform;
+  canvas.style.oTransform = canvastransform;
+  canvas.style.transform = canvastransform;
   canvas.style.filter = flip;
   canvas.style.msFilter = flip;
   video.style.webkitTransform = transform;
@@ -52,13 +53,14 @@ function enforceOptions() {
   video.style.transform = transform;
   video.style.filter = flip;
   video.style.msFilter = flip;
+  updateValues();
 }
 
 function saveOptions() {
-  // var position = document.getElementById('position').value;
-  // var mirror = document.getElementById('mirror').checked;
-  // var trackPresentation = document.getElementById('trackPresentation').checked;
-  // var zoomBreakpoints = settings.zoomBreakpoints;
+  var position = document.getElementById('position').value;
+  var mirror = document.getElementById('mirror').checked;
+  var trackPresentation = document.getElementById('trackPresentation').checked;
+  var zoomBreakpoints = settings.zoomBreakpoints;
   // try {
   //   zoomBreakpoints = JSON.parse(document.getElementById('zoomBreakpoints').value);
   // } catch (error) {
@@ -66,36 +68,34 @@ function saveOptions() {
   //   return;
   // }
 
-  // chrome.storage.sync.set({
-  //   position: position,
-  //   mirror: mirror,
-  //   trackPresentation: trackPresentation,
-  //   zoomBreakpoints: zoomBreakpoints
-  // }, function () {
-  //   // Update status to let user know options were saved.
-  //   var status = document.getElementById('status');
-  //   status.textContent = 'Options saved.';
-  //   setTimeout(function () {
-  //     status.textContent = '';
-  //   }, 750);
-  // });
+  chrome.storage.sync.set({
+    position: position,
+    mirror: mirror,
+    trackPresentation: trackPresentation,
+    zoomBreakpoints: zoomBreakpoints
+  }, function () {
+    // Update status to let user know options were saved.
+    var status = document.getElementById('status');
+    status.textContent = 'Options saved.';
+    setTimeout(function () {
+      status.textContent = '';
+    }, 750);
+  });
 
   restoreOptions();
 }
 
 function restoreOptions() {
   // Use default value color = 'red' and likesColor = true.
-  // chrome.storage.sync.get({
-  //   position: 'leftBottom',
-  //   mirror: true,
-  //   trackPresentation: true,
-  //   zoomBreakpoints: defaultZoomBreakpoints,
-  // }, function (items) {
-  //   settings = items;
-  //   enforceOptions();
-  //   updateValues();
-  // });
-  updateValues();
+  chrome.storage.sync.get({
+    position: 'leftBottom',
+    mirror: true,
+    trackPresentation: true,
+    zoomBreakpoints: defaultZoomBreakpoints,
+  }, function (items) {
+    settings = items;
+    enforceOptions();
+  });
 }
 
 let predictions = [];
@@ -227,12 +227,57 @@ document.getElementById('save').addEventListener('click', saveOptions);
 // slider
 ////////////////////////////////////////////////////////////////////////////////////////////
 
+let sliderMax = 200;
+let sliderMin = 100;
 
 let sliderContainer = document.querySelector(".slider-container");
 let sliders = document.querySelectorAll(".slider-pointer");
+let candidate = document.querySelector(".slider-candidate");
+    candidate.style.left = sliderContainer.offsetWidth / 2 + "px";
+let candidateValue = document.querySelector("#candidate-value");
+    candidateValue.textContent = Math.round((sliderMax - sliderMin) / 2 + sliderMin) + "%";
 
-let sliderMax = 500;
-let sliderMin = 50
+
+candidate.addEventListener("mousedown", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  const target = e.target;
+  const sliderWidth = target.parentNode.offsetWidth;
+  const sliderHeight = target.parentNode.offsetHeight;
+  const sliderTop = target.parentNode.offsetTop;
+  console.log("click")
+  function onMouseMove(e) {
+    const newPosition = Math.min(Math.max(e.clientX - target.parentNode.offsetLeft, 0), sliderWidth);
+    target.style.left = newPosition + "px";
+    const zoom = Math.round((e.clientX - sliderContainer.offsetLeft) * (sliderMax-sliderMin) / sliderContainer.offsetWidth + sliderMin) + "%";
+    candidateValue.textContent = zoom;
+  // target.dataset.value = Math.round((newPosition / sliderWidth) * 100);
+  }
+
+  function onMouseUp(e) {
+    console.log(e.target.offsetLeft);
+    const zoom = Math.round((candidate.offsetLeft) * (sliderMax-sliderMin) / sliderContainer.offsetWidth + sliderMin) + "%";
+
+
+    document.removeEventListener("mousemove", onMouseMove);
+    document.removeEventListener("mouseup", onMouseUp);
+  }
+
+  document.addEventListener("mousemove", onMouseMove);
+  document.addEventListener("mouseup", onMouseUp);
+});
+
+sliderContainer.addEventListener("mousedown", (e) => {
+  const target = e.target;
+  const sliderWidth = target.offsetWidth;
+
+  const prediction = getFirstOrNull(predictions);
+  const width = Math.round(getWidthFromBoundingBox(prediction.boundingBox));
+  const zoom = Math.round((e.clientX - sliderContainer.offsetLeft) * (sliderMax-sliderMin) / sliderContainer.offsetWidth + sliderMin) + "%";
+
+  addBreakPoint(width, zoom);
+  updateValues();
+})
 
 function updateValues() {
   const values = Array.from(sliders).map((slider) => Number(slider.dataset.value));
@@ -243,6 +288,7 @@ function updateValues() {
   })
   sliders = []
 
+  /* extend slider max */
   // if (settings.zoomBreakpoints){
   //   sliderMax = Math.max(...settings.zoomBreakpoints.map(item => Number.parseInt(item.zoomState))) + 50
   //   sliderMin = Math.min(...settings.zoomBreakpoints.map(item => Number.parseInt(item.zoomState))) - 50 
@@ -259,7 +305,7 @@ function updateValues() {
     const newDiv = document.createElement("div");
     newDiv.classList.add("slider-pointer");
     newDiv.style.left = Math.round((Number.parseInt(breakpoint.zoomState) - sliderMin)  / (sliderMax-sliderMin) * sliderContainer.offsetWidth) + "px" ;
-
+    // assign each point a property 'facewidth'
     newDiv.faceWidth = breakpoint.faceWidth;
   
     if (sliders.length > 0) {
@@ -267,6 +313,12 @@ function updateValues() {
     } else {
       sliders = [newDiv];
     }
+
+    const newChildDiv = document.createElement("div");
+    newChildDiv.classList.add("slider-pointer-label");
+    newChildDiv.innerHTML = breakpoint.zoomState;
+
+    newDiv.appendChild(newChildDiv)
 
     sliderContainer.appendChild(newDiv);
   })
@@ -289,9 +341,12 @@ function updateValues() {
         } else {
           target.style.top = "50%"
         }
-        console.log(settings.zoomBreakpoints[0].faceWidth)
 
         target.style.left = newPosition + "px";
+
+        const zoom = Math.round((e.clientX - sliderContainer.offsetLeft) * (sliderMax-sliderMin) / sliderContainer.offsetWidth + sliderMin) + "%";
+        const child = target.children[0]
+        child.textContent = zoom
         // target.dataset.value = Math.round((newPosition / sliderWidth) * 100);
         // updateValues();
         
@@ -311,6 +366,7 @@ function updateValues() {
               breakpoint.zoomState = Math.round((e.clientX - sliderContainer.offsetLeft) * (sliderMax-sliderMin) / sliderContainer.offsetWidth + sliderMin) + "%";
             }
           })
+          updateValues()
         }
         document.removeEventListener("mousemove", onMouseMove);
         document.removeEventListener("mouseup", onMouseUp);
@@ -320,24 +376,7 @@ function updateValues() {
       document.addEventListener("mouseup", onMouseUp);
     });
   });
-
 }
-
-
-sliderContainer.addEventListener("mousedown", (e) => {
-  const target = e.target;
-  const sliderWidth = target.offsetWidth;
-
-  const prediction = getFirstOrNull(predictions);
-  const width = Math.round(getWidthFromBoundingBox(prediction.boundingBox));
-  const zoom = Math.round((e.clientX - sliderContainer.offsetLeft) * (sliderMax-sliderMin) / sliderContainer.offsetWidth + sliderMin) + "%";
-
-  addBreakPoint(width, zoom);
-  updateValues();
-})
-
-// Update the values initially
-updateValues();
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -346,10 +385,21 @@ updateValues();
 let model = document.querySelector(".model-container");
 
 const addBreakpointButton = document.querySelector("#addBreakpointButton");
+
+// addBreakpointButton.addEventListener("click", () => {
+//   console.log("addBreakpointButton");
+//   model.classList.add("open");
+//   model.classList.remove("close");
+// });
 addBreakpointButton.addEventListener("click", () => {
-  console.log("addBreakpointButton");
-  model.classList.add("open");
-  model.classList.remove("close");
+  const prediction = getFirstOrNull(predictions);
+  const width = Math.round(getWidthFromBoundingBox(prediction.boundingBox));
+  const zoom = Math.round((candidate.offsetLeft) * (sliderMax-sliderMin) / sliderContainer.offsetWidth + sliderMin) + "%";
+
+  candidate.style.left = Math.round((sliderContainer.offsetWidth / 2)) + "px"
+  candidateValue.textContent = Math.round(sliderMax - sliderMin / 2) + sliderMin + "px";
+  addBreakPoint(width, zoom);
+  updateValues();
 });
 
 const saveBreakpointButton = document.querySelector(".breakpoint-options-save");
@@ -389,3 +439,7 @@ function addBreakPoint(width, zoom) {
     }]
   }
 }
+
+
+// Update the values initially
+updateValues();

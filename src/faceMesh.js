@@ -46,7 +46,7 @@ function drawMesh(settings) {
         canvas.style.zIndex = "100";
         canvas.style.gridArea = "1/1";
 
-        var transform = settings.mirror ? 'scaleX(-1)' : '';
+        var transform = settings.mirror ? 'scaleX(-1) translateX(100%)' : 'translateX(-100%)';
         var flip = settings.mirror ? 'FlipH' : '';
 
         canvas.style.webkitTransform = transform;
