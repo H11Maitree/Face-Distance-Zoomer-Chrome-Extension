@@ -60,7 +60,9 @@ function saveOptions() {
   var position = document.getElementById('position').value;
   var mirror = document.getElementById('mirror').checked;
   var trackPresentation = document.getElementById('trackPresentation').checked;
-  var zoomBreakpoints = settings.zoomBreakpoints;
+  var zoomBreakpoints = settings.zoomBreakpoints.sort(function(a,b) {
+    return a.faceWidth - b.faceWidth;
+  });
   // try {
   //   zoomBreakpoints = JSON.parse(document.getElementById('zoomBreakpoints').value);
   // } catch (error) {
@@ -281,7 +283,6 @@ sliderContainer.addEventListener("mousedown", (e) => {
 
 function updateValues() {
   const values = Array.from(sliders).map((slider) => Number(slider.dataset.value));
-  console.log("updateValues")
   
   sliders?.forEach((slider) => {
     slider.remove();
@@ -290,8 +291,8 @@ function updateValues() {
 
   /* extend slider max */
   // if (settings.zoomBreakpoints){
-  //   sliderMax = Math.max(...settings.zoomBreakpoints.map(item => Number.parseInt(item.zoomState))) + 50
-  //   sliderMin = Math.min(...settings.zoomBreakpoints.map(item => Number.parseInt(item.zoomState))) - 50 
+  //   sliderMax = Math.max(...settings.zoomBreakpoints.map(item => Number.parseInt(item.zoom))) + 50
+  //   sliderMin = Math.min(...settings.zoomBreakpoints.map(item => Number.parseInt(item.zoom))) - 50 
   //   if (sliderMin < 0) {
   //     sliderMin = 0;
   //   }
@@ -304,7 +305,7 @@ function updateValues() {
   settings.zoomBreakpoints?.forEach((breakpoint)=>{
     const newDiv = document.createElement("div");
     newDiv.classList.add("slider-pointer");
-    newDiv.style.left = Math.round((Number.parseInt(breakpoint.zoomState) - sliderMin)  / (sliderMax-sliderMin) * sliderContainer.offsetWidth) + "px" ;
+    newDiv.style.left = Math.round((Number.parseInt(breakpoint.zoom) - sliderMin)  / (sliderMax-sliderMin) * sliderContainer.offsetWidth) + "px" ;
     // assign each point a property 'facewidth'
     newDiv.faceWidth = breakpoint.faceWidth;
   
@@ -316,7 +317,7 @@ function updateValues() {
 
     const newChildDiv = document.createElement("div");
     newChildDiv.classList.add("slider-pointer-label");
-    newChildDiv.innerHTML = breakpoint.zoomState;
+    newChildDiv.innerHTML = breakpoint.zoom;
 
     newDiv.appendChild(newChildDiv)
 
@@ -363,7 +364,7 @@ function updateValues() {
         } else {
           settings.zoomBreakpoints.forEach((breakpoint) => {
             if (breakpoint.faceWidth == target.faceWidth) {
-              breakpoint.zoomState = Math.round((e.clientX - sliderContainer.offsetLeft) * (sliderMax-sliderMin) / sliderContainer.offsetWidth + sliderMin) + "%";
+              breakpoint.zoom = Math.round((e.clientX - sliderContainer.offsetLeft) * (sliderMax-sliderMin) / sliderContainer.offsetWidth + sliderMin) + "%";
             }
           })
           updateValues()
@@ -426,16 +427,16 @@ closeModelButton.addEventListener("click", () => {
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // function
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-function addBreakPoint(width, zoom) {
+function addBreakPoint(width, zoomState) {
   if (settings.zoomBreakpoints){
     settings.zoomBreakpoints.push({
       faceWidth: width,
-      zoomState: zoom,
+      zoom: zoomState,
     })
   }else {
     settings.zoomBreakpoints=[{
       faceWidth: width,
-      zoomState: zoom,
+      zoom: zoomState,
     }]
   }
 }
