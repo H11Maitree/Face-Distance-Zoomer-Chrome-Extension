@@ -2,42 +2,48 @@
 
 'use strict';
 
-let settings = { position: undefined, mirror: undefined, trackPresentation: undefined, zoomBreakpoints: undefined };
+let settings = { 
+  position: undefined, 
+  mirror: undefined, 
+  trackPresentation: undefined, 
+  zoomBreakpoints: undefined 
+};
 
 const defaultZoomBreakpoints = [
-  {
-    faceWidth: 0,
-    zoom: '100%'
-  },
-  {
-    faceWidth: 120,
-    zoom: '125%'
-  }, 
-  {
-    faceWidth: 150,
-    zoom: '150%'
-  }, 
-  {
-    faceWidth: 200,
-    zoom: '175%'
-  },
+  // {
+  //   faceWidth: 0,
+  //   zoom: '100%'
+  // },
+  // {
+  //   faceWidth: 120,
+  //   zoom: '125%'
+  // }, 
+  // {
+  //   faceWidth: 150,
+  //   zoom: '150%'
+  // }, 
+  // {
+  //   faceWidth: 200,
+  //   zoom: '175%'
+  // },
 ];
 
 function enforceOptions() {
   document.getElementById('position').value = settings.position;
   document.getElementById('mirror').checked = settings.mirror;
   document.getElementById('trackPresentation').checked = settings.trackPresentation;
-  document.getElementById('zoomBreakpoints').value = JSON.stringify(settings.zoomBreakpoints);
+  // document.getElementById('zoomBreakpoints').value = JSON.stringify(settings.zoomBreakpoints);
 
   let canvas = document.getElementById('facemesh-canvas');
   let video = document.getElementById("vid");
-  var transform = settings.mirror ? 'scaleX(-1)' : '';
+  var transform = settings.mirror ? 'scaleX(-1) ' : '';
+  var canvastransform = settings.mirror ? 'scaleX(-1) translateX(100%)' : 'translateX(-100%)';
   var flip = settings.mirror ? 'FlipH' : '';
-  canvas.style.webkitTransform = transform;
-  canvas.style.mozTransform = transform;
-  canvas.style.msTransform = transform;
-  canvas.style.oTransform = transform;
-  canvas.style.transform = transform;
+  canvas.style.webkitTransform = canvastransform;
+  canvas.style.mozTransform = canvastransform;
+  canvas.style.msTransform = canvastransform;
+  canvas.style.oTransform = canvastransform;
+  canvas.style.transform = canvastransform;
   canvas.style.filter = flip;
   canvas.style.msFilter = flip;
   video.style.webkitTransform = transform;
@@ -47,19 +53,22 @@ function enforceOptions() {
   video.style.transform = transform;
   video.style.filter = flip;
   video.style.msFilter = flip;
+  updateValues();
 }
 
 function saveOptions() {
   var position = document.getElementById('position').value;
   var mirror = document.getElementById('mirror').checked;
   var trackPresentation = document.getElementById('trackPresentation').checked;
-  var zoomBreakpoints = settings.zoomBreakpoints;
-  try {
-    zoomBreakpoints = JSON.parse(document.getElementById('zoomBreakpoints').value);
-  } catch (error) {
-    console.error("Failed to parse zoom breakpoints:", error);
-    return;
-  }
+  var zoomBreakpoints = settings.zoomBreakpoints.sort(function(a,b) {
+    return a.faceWidth - b.faceWidth;
+  });
+  // try {
+  //   zoomBreakpoints = JSON.parse(document.getElementById('zoomBreakpoints').value);
+  // } catch (error) {
+  //   console.error("Failed to parse zoom breakpoints:", error);
+  //   return;
+  // }
 
   chrome.storage.sync.set({
     position: position,
@@ -111,7 +120,7 @@ function getWidthFromBoundingBox(boundingBox) {
 function updateParameters() {
   function getZoomState(faceWidth) {
     let zoomLevel = undefined;
-    settings.zoomBreakpoints.forEach(breakpoint => {
+    settings.zoomBreakpoints?.forEach(breakpoint => {
       if (faceWidth >= breakpoint.faceWidth) {
         zoomLevel = breakpoint.zoom;
       }
@@ -215,3 +224,223 @@ function DOMContentLoaded() {
 document.addEventListener('DOMContentLoaded', DOMContentLoaded);
 document.getElementById('save').addEventListener('click', saveOptions);
 
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+// slider
+////////////////////////////////////////////////////////////////////////////////////////////
+
+let sliderMax = 200;
+let sliderMin = 100;
+
+let sliderContainer = document.querySelector(".slider-container");
+let sliders = document.querySelectorAll(".slider-pointer");
+let candidate = document.querySelector(".slider-candidate");
+    candidate.style.left = sliderContainer.offsetWidth / 2 + "px";
+let candidateValue = document.querySelector("#candidate-value");
+    candidateValue.textContent = Math.round((sliderMax - sliderMin) / 2 + sliderMin) + "%";
+
+
+candidate.addEventListener("mousedown", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  const target = e.target;
+  const sliderWidth = target.parentNode.offsetWidth;
+  const sliderHeight = target.parentNode.offsetHeight;
+  const sliderTop = target.parentNode.offsetTop;
+  console.log("click")
+  function onMouseMove(e) {
+    const newPosition = Math.min(Math.max(e.clientX - target.parentNode.offsetLeft, 0), sliderWidth);
+    target.style.left = newPosition + "px";
+    const zoom = Math.round((e.clientX - sliderContainer.offsetLeft) * (sliderMax-sliderMin) / sliderContainer.offsetWidth + sliderMin) + "%";
+    candidateValue.textContent = zoom;
+  // target.dataset.value = Math.round((newPosition / sliderWidth) * 100);
+  }
+
+  function onMouseUp(e) {
+    console.log(e.target.offsetLeft);
+    const zoom = Math.round((candidate.offsetLeft) * (sliderMax-sliderMin) / sliderContainer.offsetWidth + sliderMin) + "%";
+
+
+    document.removeEventListener("mousemove", onMouseMove);
+    document.removeEventListener("mouseup", onMouseUp);
+  }
+
+  document.addEventListener("mousemove", onMouseMove);
+  document.addEventListener("mouseup", onMouseUp);
+});
+
+sliderContainer.addEventListener("mousedown", (e) => {
+  const target = e.target;
+  const sliderWidth = target.offsetWidth;
+
+  const prediction = getFirstOrNull(predictions);
+  const width = Math.round(getWidthFromBoundingBox(prediction.boundingBox));
+  const zoom = Math.round((e.clientX - sliderContainer.offsetLeft) * (sliderMax-sliderMin) / sliderContainer.offsetWidth + sliderMin) + "%";
+
+  addBreakPoint(width, zoom);
+  updateValues();
+})
+
+function updateValues() {
+  const values = Array.from(sliders).map((slider) => Number(slider.dataset.value));
+  
+  sliders?.forEach((slider) => {
+    slider.remove();
+  })
+  sliders = []
+
+  /* extend slider max */
+  // if (settings.zoomBreakpoints){
+  //   sliderMax = Math.max(...settings.zoomBreakpoints.map(item => Number.parseInt(item.zoom))) + 50
+  //   sliderMin = Math.min(...settings.zoomBreakpoints.map(item => Number.parseInt(item.zoom))) - 50 
+  //   if (sliderMin < 0) {
+  //     sliderMin = 0;
+  //   }
+  //   if (sliderMax > 500) {
+  //     sliderMax
+  //   }
+  // }
+
+
+  settings.zoomBreakpoints?.forEach((breakpoint)=>{
+    const newDiv = document.createElement("div");
+    newDiv.classList.add("slider-pointer");
+    newDiv.style.left = Math.round((Number.parseInt(breakpoint.zoom) - sliderMin)  / (sliderMax-sliderMin) * sliderContainer.offsetWidth) + "px" ;
+    // assign each point a property 'facewidth'
+    newDiv.faceWidth = breakpoint.faceWidth;
+  
+    if (sliders.length > 0) {
+      sliders.push(newDiv)
+    } else {
+      sliders = [newDiv];
+    }
+
+    const newChildDiv = document.createElement("div");
+    newChildDiv.classList.add("slider-pointer-label");
+    newChildDiv.innerHTML = breakpoint.zoom;
+
+    newDiv.appendChild(newChildDiv)
+
+    sliderContainer.appendChild(newDiv);
+  })
+
+  // TODO: make it a function and change zoom value
+  sliders.forEach((slider) => {
+    slider.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const target = e.target;
+      const sliderWidth = target.parentNode.offsetWidth;
+      const sliderHeight = target.parentNode.offsetHeight;
+      const sliderTop = target.parentNode.offsetTop;
+
+      function onMouseMove(e) {
+        const newPosition = Math.min(Math.max(e.clientX - target.parentNode.offsetLeft, 0), sliderWidth);
+
+        if (Math.abs(e.clientY - sliderTop + window.scrollY) > 50) {
+          target.style.top = e.clientY - sliderTop + window.scrollY+ "px";
+        } else {
+          target.style.top = "50%"
+        }
+
+        target.style.left = newPosition + "px";
+
+        const zoom = Math.round((e.clientX - sliderContainer.offsetLeft) * (sliderMax-sliderMin) / sliderContainer.offsetWidth + sliderMin) + "%";
+        const child = target.children[0]
+        child.textContent = zoom
+        // target.dataset.value = Math.round((newPosition / sliderWidth) * 100);
+        // updateValues();
+        
+      }
+
+      function onMouseUp(e) {
+        console.log(e.target.offsetLeft);
+
+        if (Math.abs(e.clientY - sliderTop + window.scrollY) > 50) {
+          settings.zoomBreakpoints = settings.zoomBreakpoints.filter((breakpoint) => {
+            return breakpoint.faceWidth != target.faceWidth
+          })
+          updateValues()
+        } else {
+          settings.zoomBreakpoints.forEach((breakpoint) => {
+            if (breakpoint.faceWidth == target.faceWidth) {
+              breakpoint.zoom = Math.round((e.clientX - sliderContainer.offsetLeft) * (sliderMax-sliderMin) / sliderContainer.offsetWidth + sliderMin) + "%";
+            }
+          })
+          updateValues()
+        }
+        document.removeEventListener("mousemove", onMouseMove);
+        document.removeEventListener("mouseup", onMouseUp);
+      }
+
+      document.addEventListener("mousemove", onMouseMove);
+      document.addEventListener("mouseup", onMouseUp);
+    });
+  });
+}
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+// model
+///////////////////////////////////////////////////////////////////////////////////////////////////
+let model = document.querySelector(".model-container");
+
+const addBreakpointButton = document.querySelector("#addBreakpointButton");
+
+// addBreakpointButton.addEventListener("click", () => {
+//   console.log("addBreakpointButton");
+//   model.classList.add("open");
+//   model.classList.remove("close");
+// });
+addBreakpointButton.addEventListener("click", () => {
+  const prediction = getFirstOrNull(predictions);
+  const width = Math.round(getWidthFromBoundingBox(prediction.boundingBox));
+  const zoom = Math.round((candidate.offsetLeft) * (sliderMax-sliderMin) / sliderContainer.offsetWidth + sliderMin) + "%";
+
+  candidate.style.left = Math.round((sliderContainer.offsetWidth / 2)) + "px"
+  candidateValue.textContent = Math.round(sliderMax - sliderMin / 2) + sliderMin + "px";
+  addBreakPoint(width, zoom);
+  updateValues();
+});
+
+const saveBreakpointButton = document.querySelector(".breakpoint-options-save");
+saveBreakpointButton.addEventListener("click", () => {
+  console.log("saveBreakpointButton");
+  // TODO maybe: add notification when face not detected
+  const prediction = getFirstOrNull(predictions);
+  const width = Math.round(getWidthFromBoundingBox(prediction.boundingBox));
+  const zoom = document.getElementById("zoom-breakpoint").value + "%";
+
+  addBreakPoint(width, zoom)
+  updateValues()
+  model.classList.remove("open");
+  model.classList.add("close");
+});
+
+const closeModelButton = document.querySelector(".model-close");
+closeModelButton.addEventListener("click", () => {
+  console.log("closeModelButton");
+  model.classList.remove("open");
+  model.classList.add("close");
+});
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+// function
+///////////////////////////////////////////////////////////////////////////////////////////////////
+function addBreakPoint(width, zoomState) {
+  if (settings.zoomBreakpoints){
+    settings.zoomBreakpoints.push({
+      faceWidth: width,
+      zoom: zoomState,
+    })
+  }else {
+    settings.zoomBreakpoints=[{
+      faceWidth: width,
+      zoom: zoomState,
+    }]
+  }
+}
+
+
+// Update the values initially
+updateValues();

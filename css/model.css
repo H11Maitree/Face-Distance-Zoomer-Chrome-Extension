@@ -1,0 +1,43 @@
+.model-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+}
+
+.model-container.close {
+    display: none;
+}
+
+.model-container.open {
+  display: fixed;
+  width: 100%;
+  height: 100%;
+  backdrop-filter: blur(10px);
+}
+
+.model-content {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 20px;
+  background-color: rgb(102, 179, 247);
+  border-radius: 10px;
+}
+
+.breakpoint-options-form {
+  display: flex;
+  /* flex-direction: column; */
+  gap: 10px;
+}
+
+.model-close {
+    position: relative;
+    display: flex;
+    flex-direction: row-reverse;
+    padding-bottom: 10px;
+    top: -10px;
+    right: -10px;
+    cursor: pointer;
+    user-select: none;
+}
