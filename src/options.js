@@ -32,7 +32,7 @@ function enforceOptions() {
   document.getElementById('position').value = settings.position;
   document.getElementById('mirror').checked = settings.mirror;
   document.getElementById('trackPresentation').checked = settings.trackPresentation;
-  document.getElementById('zoomBreakpoints').value = JSON.stringify(settings.zoomBreakpoints);
+  // document.getElementById('zoomBreakpoints').value = JSON.stringify(settings.zoomBreakpoints);
 
   let canvas = document.getElementById('facemesh-canvas');
   let video = document.getElementById("vid");
